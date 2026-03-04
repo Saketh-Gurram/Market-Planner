@@ -1,12 +1,22 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = ''; // Use relative URLs → Vite proxy routes /api/* to http://localhost:8000
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// When posting FormData (file uploads), delete the instance-level Content-Type so
+// the browser can set "multipart/form-data; boundary=..." automatically.
+// Without this, the default "application/json" is sent and FastAPI returns 422.
+api.interceptors.request.use(config => {
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+  return config;
 });
 
 export interface RiskAssessment {
@@ -80,9 +90,10 @@ export interface MitigationStrategy {
 export const uploadCSV = async (dataType: string, file: File) => {
   const formData = new FormData();
   formData.append('file', file);
-  const response = await api.post(`/api/data/upload/csv/${dataType}`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  // Do NOT set Content-Type manually — the browser must set it automatically
+  // so it includes the multipart boundary (e.g. "multipart/form-data; boundary=----xyz").
+  // Without the boundary, python-multipart can't parse the body and drops the connection.
+  const response = await api.post(`/api/data/upload/csv/${dataType}`, formData);
   return response.data;
 };
 

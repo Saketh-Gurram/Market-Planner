@@ -16,6 +16,8 @@ class ExecutiveSummary(Base):
     urgency_level = Column(String(50), nullable=False)  # Critical/High/Medium/Low
     recommended_actions = Column(JSON, nullable=True)
     trade_offs = Column(JSON, nullable=True)
+    explanation = Column(String(2000), nullable=True)  # AI-generated reasoning text
+    confidence_score = Column(String(20), nullable=True)  # e.g. "0.87" from Gemini
     generated_timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -29,5 +31,7 @@ class ExecutiveSummary(Base):
             "urgency_level": self.urgency_level,
             "recommended_actions": self.recommended_actions,
             "trade_offs": self.trade_offs,
+            "explanation": self.explanation,
+            "confidence_score": self.confidence_score,
             "generated_timestamp": self.generated_timestamp.isoformat() if self.generated_timestamp else None,
         }

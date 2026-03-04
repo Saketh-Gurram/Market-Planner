@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getScenarioDetails } from '../services/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ArrowLeft, Package, Clock, Hash, Layers, CheckCircle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Package, Clock, Hash, Layers, CheckCircle, ChevronRight, Sparkles, Bot } from 'lucide-react';
 
 export default function ScenarioDetails() {
   const { id } = useParams<{ id: string }>();
@@ -173,6 +173,43 @@ export default function ScenarioDetails() {
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Reasoning & Explainability */}
+      {details.summary?.explanation && (
+        <div className="bg-white rounded-2xl shadow-card border border-violet-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-violet-100 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-violet-50">
+                <Sparkles className="h-5 w-5 text-violet-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">AI Reasoning & Explainability</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Auditable decision support</p>
+              </div>
+            </div>
+            <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-violet-50 text-violet-600 ring-1 ring-violet-200">
+              <Bot className="h-3 w-3" />
+              <span>{details.summary.generated_by === 'gemini' ? 'Gemini AI' : 'Rule-based'}</span>
+            </span>
+          </div>
+          <div className="p-6">
+            <p className="text-sm text-gray-700 leading-relaxed">{details.summary.explanation}</p>
+            {details.summary.trade_offs && Object.keys(details.summary.trade_offs).length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Decision Trade-offs</p>
+                <div className="space-y-2">
+                  {Object.entries(details.summary.trade_offs).map(([option, tradeoff]: [string, any]) => (
+                    <div key={option} className="flex items-start space-x-2">
+                      <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md flex-shrink-0 mt-0.5">{option}</span>
+                      <span className="text-xs text-gray-500">{tradeoff}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
