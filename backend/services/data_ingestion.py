@@ -125,6 +125,7 @@ class DataIngestionService:
                 "category_stats": result.get("category_stats"),
                 "region_stats": result.get("region_stats"),
                 "simulation_seeds": result.get("simulation_seeds"),
+                "store_stats": result.get("store_stats"),
                 "lineage": self.data_lineage,
             }
 
@@ -179,6 +180,7 @@ class DataIngestionService:
                 "category_stats": result.get("category_stats"),
                 "region_stats": result.get("region_stats"),
                 "simulation_seeds": result.get("simulation_seeds"),
+                "store_stats": result.get("store_stats"),
                 "lineage": self.data_lineage,
             }
 
@@ -231,6 +233,7 @@ class DataIngestionService:
           category_stats  – per product_category risk signals
           region_stats    – per region risk signals
           simulation_seeds – per-category parameters for seeding simulation
+          store_stats    – per store×category signals for transfer optimization
         """
         df = df.copy()
         df["date"] = pd.to_datetime(df["date"], errors="coerce")
@@ -250,6 +253,7 @@ class DataIngestionService:
         category_stats = self._compute_category_stats(df)
         region_stats = self._compute_region_stats(df)
         simulation_seeds = self._compute_simulation_seeds(df)
+        store_stats = self._compute_store_stats(df)
 
         return {
             "records": records,
@@ -257,6 +261,7 @@ class DataIngestionService:
             "category_stats": category_stats,
             "region_stats": region_stats,
             "simulation_seeds": simulation_seeds,
+            "store_stats": store_stats,
         }
 
     @staticmethod
@@ -338,6 +343,35 @@ class DataIngestionService:
                 "avg_lost_sales_units": round(float(grp["lost_sales"].mean()), 4),
                 "lost_sales_value": round(float((grp["lost_sales"] * grp["price"]).sum()), 2),
                 "avg_seller_quality": round(float(grp["seller_quality_score"].mean()), 4),
+                "fulfillment_rate": round(
+                    float(grp["actual_sales"].sum()) / total_demand if total_demand > 0 else 1.0, 4
+                ),
+            })
+        return stats
+
+    @staticmethod
+    def _compute_store_stats(df: pd.DataFrame) -> List[Dict[str, Any]]:
+        """
+        Per store × product_category aggregated signals for transfer optimization.
+        Returns a flat list — one entry per (store_id, product_category) pair.
+        """
+        grouped = df.groupby(["store_id", "product_category"])
+        stats = []
+        for (store_id, category), grp in grouped:
+            total_demand = int(grp["demand"].sum())
+            region = str(grp["region"].iloc[0]) if "region" in grp.columns else ""
+            stats.append({
+                "store_id": str(store_id),
+                "region": region,
+                "product_category": str(category),
+                "avg_stock_level": round(float(grp["stock_level"].mean()), 2),
+                "avg_demand": round(float(grp["demand"].mean()), 2),
+                "avg_price": round(float(grp["price"].mean()), 2),
+                "avg_holding_cost": round(float(grp["holding_cost"].mean()), 4),
+                "stockout_rate": round(float(grp["stockout_flag"].mean()), 4),
+                "overstock_rate": round(float(grp["overstock_flag"].mean()), 4),
+                "avg_lost_sales_units": round(float(grp["lost_sales"].mean()), 4),
+                "total_revenue": round(float(grp["revenue"].sum()), 2),
                 "fulfillment_rate": round(
                     float(grp["actual_sales"].sum()) / total_demand if total_demand > 0 else 1.0, 4
                 ),
