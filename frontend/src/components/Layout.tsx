@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Upload, TrendingUp, Activity, ChevronRight, Zap } from 'lucide-react';
+import { BarChart3, Upload, TrendingUp, Activity, ChevronRight, Zap, ArrowLeftRight, Building2 } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -13,6 +13,8 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/', label: 'Analyst Dashboard', icon: BarChart3, description: 'Risk monitoring' },
     { path: '/executive', label: 'Executive View', icon: TrendingUp, description: 'Decision support' },
     { path: '/upload', label: 'Simulate', icon: Upload, description: 'Run scenarios' },
+    { path: '/transfers', label: 'Stock Transfer', icon: ArrowLeftRight, description: 'Rebalance stores' },
+    { path: '/dashboard', label: 'Fleet Dashboard', icon: Building2, description: 'Enterprise view' },
   ];
 
   return (

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { uploadCSV, simulateScenario } from '../services/api';
+import { saveEnterpriseCache } from '../utils/enterpriseCache';
 import {
   Upload, BarChart2, Play, CheckCircle, XCircle,
   FileSpreadsheet, TrendingUp, ShoppingCart, FileText,
@@ -48,6 +49,20 @@ const DATA_TYPES = [
     badgeBg: 'bg-emerald-50',
     badgeText: 'text-emerald-600',
     badgeRing: 'ring-emerald-200',
+  },
+  {
+    id: 'enterprise',
+    label: 'Enterprise Dataset',
+    icon: Database,
+    description: 'Full 17-column multi-store retail dataset',
+    color: 'rose',
+    iconBg: 'bg-rose-50',
+    iconColor: 'text-rose-500',
+    borderHover: 'hover:border-rose-300',
+    bgHover: 'hover:bg-rose-50/40',
+    badgeBg: 'bg-rose-50',
+    badgeText: 'text-rose-600',
+    badgeRing: 'ring-rose-200',
   },
 ];
 
@@ -277,6 +292,19 @@ export default function DataUpload() {
         const updated = [record, ...uploadHistory];
         setUploadHistory(updated);
         saveHistory(updated);
+
+        // Populate enterprise cache for Fleet/Store dashboards
+        if (dataType === 'enterprise' && result.aggregate_stats) {
+          saveEnterpriseCache({
+            savedAt: new Date().toISOString(),
+            fileName: file.name,
+            recordsCount: result.records_count,
+            aggregate: result.aggregate_stats,
+            categories: result.category_stats ?? [],
+            regions: result.region_stats ?? [],
+            stores: result.store_stats ?? [],
+          });
+        }
       }
     } catch (error: any) {
       setUploadResult({ success: false, errors: [error.message] });

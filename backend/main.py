@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db
-from api import data_ingestion_routes, analysis_routes
+from api import data_ingestion_routes, analysis_routes, transfer_routes
 import logging
 
 # Configure logging
@@ -42,6 +42,7 @@ app.add_middleware(
 # Include routers
 app.include_router(data_ingestion_routes.router)
 app.include_router(analysis_routes.router)
+app.include_router(transfer_routes.router)
 
 
 @app.get("/")
