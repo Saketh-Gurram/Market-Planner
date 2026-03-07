@@ -44,9 +44,18 @@ from models import (
     RiskAssessment, FailureScenario, FailurePropagationScore,
     ExecutiveSummary, MitigationStrategy, SimulationResult, UserAction,
 )
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/analysis", tags=["Analysis"])
+
+security = HTTPBearer()
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if credentials.credentials != "dummy_token":
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return "admin"
+
+router = APIRouter(prefix="/api/analysis", tags=["Analysis"], dependencies=[Depends(get_current_user)])
 
 
 # ── Audit helper ─────────────────────────────────────────────────────────────
@@ -257,6 +266,7 @@ async def simulate_scenario(
 @router.get("/scenarios")
 async def get_scenarios(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     """List last 50 scenarios."""
+    print("Getting scenarios")
     try:
         rows = (
             db.query(FailureScenario)
@@ -326,6 +336,7 @@ async def get_scenario_details(
 @router.get("/risks")
 async def get_risks(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     """Last 100 risk assessments."""
+    print("Getting risks")
     try:
         rows = (
             db.query(RiskAssessment)

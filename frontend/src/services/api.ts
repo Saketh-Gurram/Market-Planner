@@ -9,6 +9,12 @@ const api = axios.create({
   },
 });
 
+// Add token to headers if available
+const token = localStorage.getItem('token');
+if (token) {
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+
 // When posting FormData (file uploads), delete the instance-level Content-Type so
 // the browser can set "multipart/form-data; boundary=..." automatically.
 // Without this, the default "application/json" is sent and FastAPI returns 422.
@@ -18,6 +24,20 @@ api.interceptors.request.use(config => {
   }
   return config;
 });
+
+// Authentication
+export const login = async (username: string, password: string) => {
+  const response = await axios.post('http://127.0.0.1:8001/api/auth/login', { username, password });
+  return response.data;
+};
+
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+};
 
 export interface RiskAssessment {
   id: string;

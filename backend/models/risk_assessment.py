@@ -32,9 +32,9 @@ class RiskAssessment(Base):
             "id": self.id,
             "product_category": self.product_category,
             "risk_score": self.risk_score,
-            "risk_type": self.risk_type.value if self.risk_type else None,
+            "risk_type": self.risk_type.value if hasattr(self.risk_type, 'value') else self.risk_type if self.risk_type else None,
             "confidence_level": self.confidence_level,
-            "detection_timestamp": self.detection_timestamp.isoformat() if self.detection_timestamp else None,
+            "detection_timestamp": self.detection_timestamp.isoformat() if hasattr(self.detection_timestamp, 'isoformat') else str(self.detection_timestamp) if self.detection_timestamp else None,
             "contributing_factors": self.contributing_factors,
             "historical_comparison": self.historical_comparison,
         }

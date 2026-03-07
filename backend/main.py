@@ -2,7 +2,7 @@
 Main FastAPI application entry point for Retail Failure Simulator
 """
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db
 from api import data_ingestion_routes, analysis_routes, transfer_routes
@@ -33,7 +33,7 @@ app = FastAPI(
 # CORS configuration for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["http://localhost:5173", "http://localhost:5175", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,6 +48,15 @@ app.include_router(transfer_routes.router)
 @app.get("/")
 async def root():
     return {"message": "Retail Failure Simulator API", "status": "running"}
+
+
+# Authentication endpoint
+@app.post("/api/auth/login")
+async def login(request: dict):
+    """Dummy login endpoint."""
+    if request.get("username") == "admin" and request.get("password") == "password":
+        return {"token": "dummy_token"}
+    raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
 @app.get("/health")

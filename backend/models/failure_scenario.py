@@ -31,10 +31,10 @@ class FailureScenario(Base):
     def to_dict(self):
         return {
             "scenario_id": self.scenario_id,
-            "scenario_type": self.scenario_type.value if self.scenario_type else None,
+            "scenario_type": self.scenario_type.value if hasattr(self.scenario_type, 'value') else self.scenario_type,
             "affected_products": self.affected_products,
             "time_horizon": self.time_horizon,
             "initial_conditions": self.initial_conditions,
             "simulation_parameters": self.simulation_parameters,
-            "created_timestamp": self.created_timestamp.isoformat() if self.created_timestamp else None,
+            "created_timestamp": self.created_timestamp.isoformat() if hasattr(self.created_timestamp, 'isoformat') else str(self.created_timestamp) if self.created_timestamp else None,
         }
