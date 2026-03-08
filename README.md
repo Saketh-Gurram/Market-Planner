@@ -1,309 +1,263 @@
-# AI-Powered Retail Failure Simulator & Market Intelligence Platform
+# RetailSense AI — Retail Failure Simulator & Market Intelligence Platform
 
-A comprehensive pre-emptive decision-making system that simulates retail failure scenarios to enable proactive business risk management.
+> Built for the **AWS AI for Bharat Hackathon** · Team SpectacularCrew
 
-## 🎯 Features
+A pre-emptive decision-making platform that simulates retail failure scenarios, propagates risk across business functions, and surfaces AI-generated mitigation strategies — enabling retailers to act before problems escalate.
 
-- **Seasonal Risk Detection**: Analyze seasonal demand patterns and detect potential mismatches
-- **Failure Simulation**: Model inventory overstock and stockout scenarios with time-series projections
-- **Impact Analysis**: Calculate failure propagation across business functions using network analysis
-- **AI-Powered Insights**: Generate executive summaries and mitigation strategies (mocked, AWS Bedrock-ready)
-- **Dual Dashboards**: 
-  - Analyst Dashboard: Comprehensive risk monitoring and detailed analysis
-  - Executive Dashboard: Mobile-responsive decision interface with 30-second flows
-- **Data Ingestion**: Support for CSV and JSON data uploads (sales, inventory, market trends)
+---
 
-## 🏗️ Tech Stack
+## Features
 
-### Backend
-- **FastAPI** (Python 3.11) - High-performance async API framework
-- **MySQL 8.0** - Relational database
-- **SQLAlchemy** - ORM with Alembic migrations
-- **Pandas, NumPy, Scikit-learn** - Data analytics and ML
-- **NetworkX** - Failure propagation graph analysis
+- **Risk Engine** — Detects seasonal demand mismatches and computes real-time risk scores per product category
+- **Failure Simulator** — Models overstock, stockout, and seasonal mismatch scenarios with time-series projections
+- **Propagation Engine** — Traces failure impact across interconnected business functions using graph analysis
+- **AI Reasoning Engine** — Generates executive summaries and ranked mitigation strategies (AWS Bedrock-ready)
+- **Stock Transfer Optimizer** — Recommends cross-store inventory rebalancing to prevent waste and shortages
+- **Fleet Dashboard** — Monitors logistics and distribution health
+- **Store Drill-Through** — Zooms into individual store performance and risk exposure
+- **Dual Dashboards**
+  - *Analyst Dashboard* — Full risk monitoring, scenario history, and detailed analysis
+  - *Executive Dashboard* — Mobile-responsive 30-second decision flows
 
-### Frontend
-- **React 18** with **TypeScript** - Modern component-based UI
-- **Vite** - Fast build tool and dev server
-- **TailwindCSS** - Utility-first styling
-- **Recharts** - Data visualization
-- **React Router** - Client-side routing
-- **Axios** - HTTP client
+---
 
-## 🚀 Quick Start
+## Tech Stack
 
-### Option 1: Automated Setup (Recommended)
+| Layer | Technology |
+|---|---|
+| Backend | FastAPI (Python 3.11), SQLAlchemy, Alembic, SQLite / MySQL 8.0 |
+| Data & ML | Pandas, NumPy, Scikit-learn, NetworkX |
+| Cloud | AWS S3 (data ingestion), AWS DynamoDB (event store), AWS Bedrock (AI — pluggable) |
+| Frontend | React 18, TypeScript, Vite, TailwindCSS, Recharts, React Router, Axios |
+| Infrastructure | Docker, Docker Compose |
 
-**Windows:**
+---
+
+## Quick Start
+
+### Option 1 — Docker (Recommended)
+
+**Windows**
 ```bash
 setup.bat
 ```
 
-**Linux/Mac:**
+**Linux / macOS**
 ```bash
-chmod +x setup.sh
-./setup.sh
+chmod +x setup.sh && ./setup.sh
 ```
 
-This will:
-1. Check Docker installation
-2. Create environment files
-3. Start all services via Docker Compose
-4. Initialize the database
+The script checks for Docker, creates environment files, starts all services, and seeds the database.
 
-### Option 2: Docker Compose Manual
+### Option 2 — Docker Compose Manual
 
 ```bash
-# Create backend .env file
-cp backend/.env.example backend/.env
-
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+cp backend/.env.example backend/.env   # configure your env
+docker-compose up -d                   # start all services
+docker-compose logs -f                 # tail logs
+docker-compose down                    # stop
 ```
 
-### Access the Application
+### Access
 
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **MySQL**: localhost:3306 (user: root, password: password)
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8000 |
+| Interactive API Docs | http://localhost:8000/docs |
+| MySQL | localhost:3306 (root / password) |
 
-## 📋 Prerequisites
+---
 
-- **Docker** 20.10+ and **Docker Compose** 2.0+
-- For local development without Docker:
-  - Python 3.11+
-  - Node.js 20+
-  - MySQL 8.0+
+## Local Development (Without Docker)
 
-## 🛠️ Local Development Setup (Without Docker)
+### Prerequisites
 
-### Backend Setup
+- Python 3.11+
+- Node.js 20+
+- MySQL 8.0+ (or use the bundled SQLite fallback)
 
-1. **Navigate to backend directory:**
-   ```bash
-   cd backend
-   ```
+### Backend
 
-2. **Create and activate virtual environment:**
-   ```bash
-   python -m venv venv
-   
-   # Windows
-   venv\Scripts\activate
-   
-   # Linux/Mac
-   source venv/bin/activate
-   ```
+```bash
+cd backend
+python -m venv venv
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+# Windows
+venv\Scripts\activate
+# Linux / macOS
+source venv/bin/activate
 
-4. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your MySQL connection details
-   ```
+pip install -r requirements.txt
+cp .env.example .env          # set DATABASE_URL
+alembic upgrade head           # run migrations
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
-5. **Initialize database:**
-   ```bash
-   # Make sure MySQL is running
-   alembic upgrade head
-   ```
+### Frontend
 
-6. **Start backend server:**
-   ```bash
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
-   ```
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-### Frontend Setup
+---
 
-1. **Navigate to frontend directory:**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Start development server:**
-   ```bash
-   npm run dev
-   ```
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-retail-failure-simulator/
+ai_bharat/
 ├── backend/
-│   ├── main.py                      # FastAPI app entry point
-│   ├── config.py                    # Configuration management
-│   ├── database.py                  # Database connection
-│   ├── models/                      # SQLAlchemy models
-│   │   ├── risk_assessment.py
-│   │   ├── failure_scenario.py
-│   │   ├── propagation_score.py
-│   │   └── ...
-│   ├── schemas/                     # Pydantic schemas
-│   ├── services/                    # Business logic
-│   │   ├── data_ingestion.py
+│   ├── main.py                     # FastAPI app entry point
+│   ├── config.py                   # Configuration management
+│   ├── database.py                 # DB connection & session
+│   ├── models/                     # SQLAlchemy ORM models
+│   ├── schemas/                    # Pydantic request/response schemas
+│   ├── engines/                    # Core analytical engines
+│   │   ├── ai_reasoning_engine.py
+│   │   ├── mitigation_engine.py
+│   │   ├── propagation_engine.py
+│   │   ├── risk_engine.py
+│   │   ├── simulation_engine.py
+│   │   └── transfer_engine.py
+│   ├── services/                   # External integrations
+│   │   ├── s3_service.py
+│   │   ├── dynamodb_service.py
 │   │   ├── seasonal_risk_engine.py
 │   │   ├── failure_simulator.py
-│   │   ├── impact_analyzer.py
-│   │   ├── ai_reasoning_engine.py
-│   │   └── mitigation_engine.py
-│   ├── api/                         # API routes
+│   │   └── impact_analyzer.py
+│   ├── api/                        # Route handlers
+│   │   ├── analysis_routes.py
 │   │   ├── data_ingestion_routes.py
-│   │   └── analysis_routes.py
-│   ├── alembic/                     # Database migrations
+│   │   └── transfer_routes.py
+│   ├── alembic/                    # DB migrations
 │   └── requirements.txt
 ├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   └── Layout.tsx
-│   │   ├── pages/
-│   │   │   ├── AnalystDashboard.tsx
-│   │   │   ├── ExecutiveDashboard.tsx
-│   │   │   ├── DataUpload.tsx
-│   │   │   └── ScenarioDetails.tsx
-│   │   ├── services/
-│   │   │   └── api.ts
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── package.json
-│   └── vite.config.ts
+│   └── src/
+│       ├── pages/
+│       │   ├── AnalystDashboard.tsx
+│       │   ├── ExecutiveDashboard.tsx
+│       │   ├── SimulateDashboard.tsx
+│       │   ├── FleetDashboard.tsx
+│       │   ├── StoreDashboard.tsx
+│       │   ├── StoreTransfer.tsx
+│       │   ├── DataUpload.tsx
+│       │   └── ScenarioDetails.tsx
+│       ├── components/
+│       ├── services/api.ts
+│       ├── App.tsx
+│       └── main.tsx
 ├── docker-compose.yml
-├── setup.sh                         # Linux/Mac setup script
-├── setup.bat                        # Windows setup script
+├── setup.sh / setup.bat
 └── README.md
 ```
 
-## 🎮 Usage Guide
+---
+
+## API Reference
+
+### Data Ingestion
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/data/upload/csv/{data_type}` | Upload CSV (sales / inventory / market_trends) |
+| POST | `/api/data/upload/json/{data_type}` | Upload JSON data |
+
+### Analysis & Simulation
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/analysis/risk/analyze` | Analyze seasonal risks |
+| POST | `/api/analysis/simulate` | Run a failure simulation |
+| GET | `/api/analysis/scenarios` | List all scenarios |
+| GET | `/api/analysis/scenarios/{id}` | Get scenario details |
+| GET | `/api/analysis/risks` | List all risk assessments |
+
+### Stock Transfer
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/transfer/optimize` | Run cross-store transfer optimization |
+
+Full interactive docs at `/docs` when the backend is running.
+
+---
+
+## Usage Guide
 
 ### 1. Upload Data
 
-Navigate to **Data Upload** page:
-- Upload CSV files for sales, inventory, or market trends
-- Supported formats:
-  - **Sales**: date, product_id, quantity, revenue
-  - **Inventory**: date, product_id, stock_level
-  - **Market Trends**: date, product_category, demand_forecast
+Go to **Data Upload** and provide CSV files in these formats:
 
-### 2. Run Simulations
-
-On the **Data Upload** page:
-1. Select scenario type (Overstock, Stockout, Seasonal Mismatch)
-2. Configure parameters:
-   - Time horizon (days)
-   - Affected products
-   - Base inventory
-   - Demand rate
-3. Click "Run Simulation"
-
-### 3. View Results
-
-**Analyst Dashboard:**
-- Real-time risk scores by product category
-- Detailed simulation results
-- Historical trend analysis
-
-**Executive Dashboard:**
-- 3-point executive summaries (Revenue Risk, Market Reason, Urgency)
-- Impact propagation scores
-- Ranked mitigation strategies with trade-offs
-
-**Scenario Details:**
-- Time-series visualizations
-- Impact analysis across business functions
-- Detailed mitigation recommendations
-
-## 🔌 API Endpoints
-
-### Data Ingestion
-- `POST /api/data/upload/csv/{data_type}` - Upload CSV file
-- `POST /api/data/upload/json/{data_type}` - Upload JSON data
-
-### Analysis
-- `POST /api/analysis/risk/analyze` - Analyze seasonal risks
-- `POST /api/analysis/simulate` - Run failure simulation
-- `GET /api/analysis/scenarios` - List all scenarios
-- `GET /api/analysis/scenarios/{id}` - Get scenario details
-- `GET /api/analysis/risks` - List all risk assessments
-
-Full API documentation: http://localhost:8000/docs
-
-## 🧪 Testing
-
-### Backend Tests
-```bash
-cd backend
-pytest
-pytest --cov=. --cov-report=html  # With coverage
+**Sales** (`date, product_id, quantity, revenue`)
+```csv
+2024-01-01,PROD001,100,5000
 ```
 
-### Frontend Tests
-```bash
-cd frontend
-npm test
-npm run test:coverage
+**Inventory** (`date, product_id, stock_level`)
+```csv
+2024-01-01,PROD001,1000
 ```
 
-## 🐛 Troubleshooting
-
-### Docker Issues
-
-**Services won't start:**
-```bash
-docker-compose down -v
-docker-compose up -d --build
+**Market Trends** (`date, product_category, demand_forecast`)
+```csv
+2024-01-01,Electronics,500
 ```
 
-**Database connection errors:**
-```bash
-# Check MySQL is running
-docker-compose ps
+### 2. Run a Simulation
 
-# View MySQL logs
-docker-compose logs mysql
+On the **Simulate Dashboard**:
+1. Select scenario type: `Overstock`, `Stockout`, or `Seasonal Mismatch`
+2. Set time horizon, affected products, base inventory, and demand rate
+3. Click **Run Simulation**
+
+### 3. Interpret Results
+
+- **Analyst Dashboard** — Risk scores, trends, and raw scenario data
+- **Executive Dashboard** — 3-point summary (Revenue Risk · Market Reason · Urgency) with ranked mitigation actions
+- **Scenario Details** — Time-series charts, propagation impact, and mitigation cost/timeline estimates
+- **Store Transfer** — Cross-store rebalancing recommendations
+
+---
+
+## Troubleshooting
+
+**Services won't start**
+```bash
+docker-compose down -v && docker-compose up -d --build
 ```
 
-### Local Development Issues
+**Database connection error**
+```bash
+docker-compose logs mysql     # inspect MySQL logs
+docker-compose down -v        # reset volumes and retry
+```
 
-**Backend won't start:**
-- Verify MySQL is running and accessible
-- Check `.env` file has correct DATABASE_URL
-- Ensure all dependencies are installed: `pip install -r requirements.txt`
+**Frontend not loading**
+```bash
+docker-compose up -d --build frontend
+# or locally:
+rm -rf node_modules && npm install && npm run dev
+```
 
-**Frontend won't start:**
-- Clear node_modules: `rm -rf node_modules && npm install`
-- Check Node.js version: `node --version` (should be 20+)
+**Backend won't start locally**
+- Confirm MySQL is running and `DATABASE_URL` in `.env` is correct
+- Run `pip install -r requirements.txt` again to ensure all deps are present
 
-## 🔮 Future Enhancements
+---
 
-- [ ] AWS Bedrock integration for real AI reasoning
-- [ ] WebSocket support for real-time updates
-- [ ] User authentication and authorization
-- [ ] Property-based testing implementation
-- [ ] Advanced data visualization with D3.js
-- [ ] Export reports to PDF
-- [ ] Email notifications for critical risks
+## Roadmap
+
+- [ ] AWS Bedrock live integration for AI reasoning
+- [ ] WebSocket real-time risk updates
+- [ ] User authentication & role-based access
+- [ ] PDF report export
+- [ ] Email / SMS alerts for critical risk thresholds
 - [ ] Multi-tenant support
 
-## 📄 License
+---
 
-Proprietary - All rights reserved
+## License
 
-## 👥 Support
-
-For issues and questions, please check the API documentation at http://localhost:8000/docs or review the application logs.
-"# Market-Planner" 
+Proprietary — All rights reserved · Team SpectacularCrew
