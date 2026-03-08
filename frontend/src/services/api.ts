@@ -9,6 +9,12 @@ const api = axios.create({
   },
 });
 
+// Add token to headers if available
+const token = localStorage.getItem('token');
+if (token) {
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+
 // When posting FormData (file uploads), delete the instance-level Content-Type so
 // the browser can set "multipart/form-data; boundary=..." automatically.
 // Without this, the default "application/json" is sent and FastAPI returns 422.
@@ -18,6 +24,20 @@ api.interceptors.request.use(config => {
   }
   return config;
 });
+
+// Authentication
+export const login = async (username: string, password: string) => {
+  const response = await axios.post('http://127.0.0.1:8001/api/auth/login', { username, password });
+  return response.data;
+};
+
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+};
 
 export interface RiskAssessment {
   id: string;
@@ -126,6 +146,77 @@ export const getScenarios = async (): Promise<FailureScenario[]> => {
 
 export const getScenarioDetails = async (scenarioId: string) => {
   const response = await api.get(`/api/analysis/scenarios/${scenarioId}`);
+  return response.data;
+};
+
+// Stock Transfer Optimization
+export interface StoreCategoryStat {
+  store_id: string;
+  region: string;
+  product_category: string;
+  avg_stock_level: number;
+  avg_demand: number;
+  avg_price: number;
+  avg_holding_cost: number;
+  stockout_rate: number;
+  overstock_rate: number;
+  avg_lost_sales_units: number;
+  total_revenue: number;
+  fulfillment_rate: number;
+}
+
+export interface TransferEconomics {
+  saved_holding_cost: number;
+  saved_procurement_cost: number;
+  transport_cost: number;
+  net_benefit: number;
+  roi_percent: number;
+}
+
+export interface TransferStore {
+  store_id: string;
+  region: string;
+  avg_stock_level: number;
+  avg_demand: number;
+  excess_units?: number;
+  deficit_units?: number;
+  avg_holding_cost?: number;
+  avg_lost_sales_units?: number;
+}
+
+export interface TransferRecommendation {
+  transfer_id: string;
+  product_category: string;
+  source_store: TransferStore;
+  destination_store: TransferStore;
+  transfer_quantity: number;
+  economics: TransferEconomics;
+  recommendation_strength: 'Strong' | 'Moderate' | 'Marginal' | 'Not Viable';
+  is_viable: boolean;
+  priority_rank: number;
+}
+
+export interface TransferResult {
+  success: boolean;
+  total_opportunities: number;
+  viable_transfers: number;
+  total_potential_savings: number;
+  stores_involved: number;
+  transport_cost_per_unit: number;
+  time_horizon_days: number;
+  transfers: TransferRecommendation[];
+}
+
+export const recommendTransfers = async (
+  store_stats: StoreCategoryStat[],
+  transport_cost_per_unit: number,
+  time_horizon_days: number = 30,
+): Promise<TransferResult> => {
+  const response = await api.post('/api/transfers/recommend', {
+    store_stats,
+    transport_cost_per_unit,
+    time_horizon_days,
+  });
   return response.data;
 };
 

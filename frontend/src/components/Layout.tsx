@@ -1,17 +1,20 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Upload, TrendingUp, Activity, ChevronRight, Zap } from 'lucide-react';
+import { BarChart3, Upload, TrendingUp, Activity, ChevronRight, Zap, ArrowLeftRight, Building2, LogOut } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
+  onLogout: () => void;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, onLogout }: LayoutProps) {
   const location = useLocation();
 
   const navItems = [
     { path: '/', label: 'Analyst Dashboard', icon: BarChart3, description: 'Risk monitoring' },
     { path: '/executive', label: 'Executive View', icon: TrendingUp, description: 'Decision support' },
+    { path: '/transfers', label: 'Stock Transfer', icon: ArrowLeftRight, description: 'Rebalance stores' },
+    { path: '/dashboard', label: 'Fleet Dashboard', icon: Building2, description: 'Enterprise view' },
     { path: '/upload', label: 'Simulate', icon: Upload, description: 'Run scenarios' },
   ];
 
@@ -28,8 +31,8 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             <div>
               <div className="font-bold text-base leading-tight tracking-tight">
-                <span className="text-white">RETAIL</span>
-                <span style={{ color: '#818cf8' }}>RISK</span>
+                <span className="text-white">Risk</span>
+                <span style={{ color: '#818cf8' }}>Pulse</span>
               </div>
               <div className="text-xs mt-0.5 tracking-widest uppercase" style={{ color: '#475569', fontSize: '9px' }}>Intelligence</div>
             </div>
@@ -83,7 +86,7 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Status Footer */}
         <div className="px-4 pb-5">
-          <div className="rounded-xl px-3.5 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="rounded-xl px-3.5 py-3 mb-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
             <div className="flex items-center space-x-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -95,6 +98,16 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             <p className="text-xs mt-1 font-mono" style={{ color: '#334155' }}>localhost:8000</p>
           </div>
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-slate-400 hover:text-slate-200"
+            style={{ background: 'rgba(255,255,255,0.05)' }}
+          >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-white/5">
+              <LogOut className="h-4 w-4" />
+            </div>
+            <span className="text-sm font-medium">Logout</span>
+          </button>
         </div>
       </div>
 

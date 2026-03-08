@@ -38,4 +38,9 @@ def init_db():
     """
     Initialize database tables
     """
+    # Import all models to register them with Base
+    from models import (
+        RiskAssessment, FailureScenario, FailurePropagationScore,
+        ExecutiveSummary, MitigationStrategy, UserAction, SimulationResult
+    )
     Base.metadata.create_all(bind=engine)

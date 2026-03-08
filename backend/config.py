@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     # API
     API_HOST: str = "0.0.0.0"
-    API_PORT: int = 8000
+    API_PORT: int = 8001
 
     # Performance SLA
     RISK_PROCESSING_SLA_SECONDS: int = 300
