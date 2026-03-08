@@ -39,6 +39,27 @@ class Settings(BaseSettings):
     #
     GEMINI_MODEL_ID: str = "gemini-2.0-flash"
 
+    # ------------------------------------------------------------------ #
+    # AWS S3                                                               #
+    # Set credentials in .env — never hard-code them                     #
+    # ------------------------------------------------------------------ #
+    AWS_REGION: str = "eu-west-1"
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_S3_BUCKET: str = "spectacular-crew-retail-data"
+
+    # ------------------------------------------------------------------ #
+    # AWS Bedrock                                                          #
+    # ------------------------------------------------------------------ #
+    AWS_BEDROCK_MODEL_ID: str = "anthropic.claude-3-haiku-20240307-v1:0"
+
+    # ------------------------------------------------------------------ #
+    # DynamoDB table names                                                 #
+    # ------------------------------------------------------------------ #
+    DYNAMO_TABLE_UPLOADS: str = "ai_bharat_uploads"
+    DYNAMO_TABLE_SIMULATIONS: str = "ai_bharat_simulations"
+    DYNAMO_TABLE_ACTIVITY_LOGS: str = "ai_bharat_activity_logs"
+
     model_config = ConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 

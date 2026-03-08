@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { uploadCSV, simulateScenario } from '../services/api';
+import { uploadCSV } from '../services/api';
+import api from '../services/api';
 import { saveEnterpriseCache } from '../utils/enterpriseCache';
 import {
-  Upload, BarChart2, Play, CheckCircle, XCircle,
-  FileSpreadsheet, TrendingUp, ShoppingCart, FileText,
+  Upload, CheckCircle, XCircle,
+  FileSpreadsheet, ShoppingCart, FileText,
   Trash2, Clock, Database, Eye, X, AlertCircle,
 } from 'lucide-react';
 
@@ -37,20 +38,6 @@ const DATA_TYPES = [
     badgeRing: 'ring-violet-200',
   },
   {
-    id: 'market_trends',
-    label: 'Market Trends',
-    icon: TrendingUp,
-    description: 'External market trend signals',
-    color: 'emerald',
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-emerald-500',
-    borderHover: 'hover:border-emerald-300',
-    bgHover: 'hover:bg-emerald-50/40',
-    badgeBg: 'bg-emerald-50',
-    badgeText: 'text-emerald-600',
-    badgeRing: 'ring-emerald-200',
-  },
-  {
     id: 'enterprise',
     label: 'Enterprise Dataset',
     icon: Database,
@@ -79,7 +66,7 @@ interface UploadRecord {
   preview: any[]; // up to PREVIEW_LIMIT rows stored for the modal
 }
 
-const STORAGE_KEY = 'retail_risk_upload_history';
+const STORAGE_KEY = 'ai_bharat_upload_history_v2';
 
 function loadHistory(): UploadRecord[] {
   try {
@@ -240,9 +227,7 @@ function FilePreviewModal({ record, onClose }: FilePreviewModalProps) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function DataUpload() {
   const [uploading, setUploading] = useState(false);
-  const [simulating, setSimulating] = useState(false);
   const [uploadResult, setUploadResult] = useState<any>(null);
-  const [simulationResult, setSimulationResult] = useState<any>(null);
   const [uploadedType, setUploadedType] = useState<string | null>(null);
   const [uploadHistory, setUploadHistory] = useState<UploadRecord[]>([]);
   const [viewingRecord, setViewingRecord] = useState<UploadRecord | null>(null);
@@ -304,10 +289,24 @@ export default function DataUpload() {
             regions: result.region_stats ?? [],
             stores: result.store_stats ?? [],
           });
+
+          // Auto-trigger risk analysis so Analyst Dashboard populates immediately
+          if (result.category_stats?.length) {
+            try {
+              await api.post('/api/analysis/risk/analyze-enterprise',
+                { category_stats: result.category_stats },
+                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+              );
+            } catch {
+              // non-blocking — dashboard will show empty state
+            }
+          }
         }
       }
     } catch (error: any) {
-      setUploadResult({ success: false, errors: [error.message] });
+      const detail = error.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail.join('; ') : detail ?? error.message;
+      setUploadResult({ success: false, errors: [msg] });
     } finally {
       setUploading(false);
     }
@@ -325,40 +324,6 @@ export default function DataUpload() {
     saveHistory([]);
     setViewingRecord(null);
   };
-
-  const handleSimulation = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-
-    const scenarioData = {
-      scenario_type: formData.get('scenario_type'),
-      affected_products: (formData.get('affected_products') as string).split(',').map(p => p.trim()),
-      time_horizon: parseInt(formData.get('time_horizon') as string),
-      initial_conditions: {
-        base_inventory: parseInt(formData.get('base_inventory') as string),
-      },
-      simulation_parameters: {
-        demand_rate: parseInt(formData.get('demand_rate') as string),
-        overstock_factor: parseFloat(formData.get('overstock_factor') as string) || 2.0,
-        stockout_factor: parseFloat(formData.get('stockout_factor') as string) || 0.5,
-      },
-    };
-
-    setSimulating(true);
-    setSimulationResult(null);
-
-    try {
-      const result = await simulateScenario(scenarioData);
-      setSimulationResult(result);
-    } catch (error: any) {
-      setSimulationResult({ success: false, error: error.message });
-    } finally {
-      setSimulating(false);
-    }
-  };
-
-  const inputClass = "w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all placeholder:text-gray-300";
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
 
   return (
     <div className="space-y-6">
@@ -528,99 +493,6 @@ export default function DataUpload() {
             })}
           </div>
         )}
-      </div>
-
-      {/* Simulation Section */}
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)' }}>
-              <BarChart2 className="h-5 w-5 text-indigo-600" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-gray-900">Run Simulation</h3>
-              <p className="text-xs text-gray-400">Configure and execute a failure scenario</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-6">
-          <form onSubmit={handleSimulation} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className={labelClass}>Scenario Type</label>
-                <select name="scenario_type" className={inputClass} required>
-                  <option value="OVERSTOCK">Overstock</option>
-                  <option value="STOCKOUT">Stockout</option>
-                  <option value="SEASONAL_MISMATCH">Seasonal Mismatch</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Time Horizon (days)</label>
-                <input type="number" name="time_horizon" defaultValue="30" min="1" max="365" className={inputClass} required />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className={labelClass}>Affected Products <span className="text-gray-400 font-normal">(comma-separated)</span></label>
-                <input type="text" name="affected_products" placeholder="PROD001, PROD002, PROD003" className={inputClass} required />
-              </div>
-
-              <div>
-                <label className={labelClass}>Base Inventory</label>
-                <input type="number" name="base_inventory" defaultValue="1000" min="0" className={inputClass} required />
-              </div>
-
-              <div>
-                <label className={labelClass}>Demand Rate <span className="text-gray-400 font-normal">(units/day)</span></label>
-                <input type="number" name="demand_rate" defaultValue="50" min="0" className={inputClass} required />
-              </div>
-
-              <div>
-                <label className={labelClass}>Overstock Factor</label>
-                <input type="number" name="overstock_factor" defaultValue="2.0" step="0.1" min="1" className={inputClass} />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={simulating}
-              className="w-full flex items-center justify-center space-x-2 px-6 py-3.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ background: simulating ? '#a5b4fc' : 'linear-gradient(135deg, #4f46e5, #6366f1)', boxShadow: simulating ? 'none' : '0 4px 14px rgba(79,70,229,0.35)' }}
-            >
-              <Play className="h-4 w-4" />
-              <span>{simulating ? 'Running Simulation...' : 'Run Simulation'}</span>
-            </button>
-          </form>
-
-          {simulationResult && (
-            <div className={`mt-5 p-4 rounded-xl border ${simulationResult.success ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-              {simulationResult.success ? (
-                <div>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500" />
-                    <p className="text-sm font-semibold text-emerald-800">Simulation completed successfully!</p>
-                  </div>
-                  <div className="space-y-1 font-mono text-xs text-emerald-700 pl-7">
-                    <p>Scenario ID: {simulationResult.scenario_id}</p>
-                    <p>Execution time: {simulationResult.simulation?.execution_time_seconds?.toFixed(2)}s</p>
-                  </div>
-                  <a
-                    href={`/scenario/${simulationResult.scenario_id}`}
-                    className="inline-flex items-center space-x-1.5 mt-3 ml-7 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
-                  >
-                    <span>View detailed results</span>
-                    <span>→</span>
-                  </a>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <XCircle className="h-5 w-5 text-red-500" />
-                  <p className="text-sm font-medium text-red-800">Simulation failed: {simulationResult.error}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* File Preview Modal */}

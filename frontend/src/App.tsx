@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import AnalystDashboard from './pages/AnalystDashboard';
 import ExecutiveDashboard from './pages/ExecutiveDashboard';
 import DataUpload from './pages/DataUpload';
+import SimulateDashboard from './pages/SimulateDashboard';
 import ScenarioDetails from './pages/ScenarioDetails';
 import StoreTransfer from './pages/StoreTransfer';
 import FleetDashboard from './pages/FleetDashboard';
@@ -54,6 +55,7 @@ function App() {
           <Route path="/" element={<AnalystDashboard />} />
           <Route path="/executive" element={<ExecutiveDashboard />} />
           <Route path="/upload" element={<DataUpload />} />
+          <Route path="/simulate" element={<SimulateDashboard />} />
           <Route path="/scenario/:id" element={<ScenarioDetails />} />
           <Route path="/transfers" element={<StoreTransfer />} />
           <Route path="/dashboard" element={<FleetDashboard />} />

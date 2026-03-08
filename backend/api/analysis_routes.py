@@ -35,6 +35,8 @@ import logging
 import time
 
 from database import get_db
+from services.dynamodb_service import DynamoDBService
+from config import settings
 from engines.risk_engine import RiskEngine
 from engines.simulation_engine import SimulationEngine
 from engines.propagation_engine import PropagationEngine
@@ -227,6 +229,22 @@ async def simulate_scenario(
                 ))
 
         db.commit()
+
+        # Save simulation summary to DynamoDB (non-blocking)
+        DynamoDBService().put_item(
+            settings.DYNAMO_TABLE_SIMULATIONS,
+            {
+                "scenario_id": scenario_id,
+                "scenario_type": scenario_data.get("scenario_type", ""),
+                "affected_products": ", ".join(scenario_data.get("affected_products", [])),
+                "urgency_level": summary.get("urgency_level", "Unknown") if summary else "Unknown",
+                "projected_revenue_loss": str(simulation_result.get("projected_revenue_loss", 0)),
+                "propagation_score": str(impact_result.get("overall_score", 0) if impact_result else 0),
+                "generated_by": summary.get("generated_by", "none") if summary else "none",
+                "simulated_at": datetime.datetime.utcnow().isoformat(),
+            },
+            hash_key="scenario_id",
+        )
 
         # Audit log
         _log_action(

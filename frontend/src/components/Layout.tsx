@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Upload, TrendingUp, Activity, ChevronRight, Zap, ArrowLeftRight, Building2, LogOut } from 'lucide-react';
+import { BarChart3, Upload, TrendingUp, Activity, ChevronRight, Zap, ArrowLeftRight, Building2, LogOut, Play } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,7 +15,8 @@ export default function Layout({ children, onLogout }: LayoutProps) {
     { path: '/executive', label: 'Executive View', icon: TrendingUp, description: 'Decision support' },
     { path: '/transfers', label: 'Stock Transfer', icon: ArrowLeftRight, description: 'Rebalance stores' },
     { path: '/dashboard', label: 'Fleet Dashboard', icon: Building2, description: 'Enterprise view' },
-    { path: '/upload', label: 'Simulate', icon: Upload, description: 'Run scenarios' },
+    { path: '/simulate', label: 'Simulate', icon: Play, description: 'Run scenarios' },
+    { path: '/upload', label: 'Data Upload', icon: Upload, description: 'Upload datasets' },
   ];
 
   return (

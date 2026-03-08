@@ -15,10 +15,13 @@ if (token) {
   api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
 
-// When posting FormData (file uploads), delete the instance-level Content-Type so
-// the browser can set "multipart/form-data; boundary=..." automatically.
-// Without this, the default "application/json" is sent and FastAPI returns 422.
+// Always attach the latest token from localStorage, and strip Content-Type for FormData
+// so the browser can set the correct multipart boundary automatically.
 api.interceptors.request.use(config => {
+  const latestToken = localStorage.getItem('token');
+  if (latestToken) {
+    config.headers['Authorization'] = `Bearer ${latestToken}`;
+  }
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
   }
@@ -27,7 +30,7 @@ api.interceptors.request.use(config => {
 
 // Authentication
 export const login = async (username: string, password: string) => {
-  const response = await axios.post('http://127.0.0.1:8001/api/auth/login', { username, password });
+  const response = await api.post('/api/auth/login', { username, password });
   return response.data;
 };
 

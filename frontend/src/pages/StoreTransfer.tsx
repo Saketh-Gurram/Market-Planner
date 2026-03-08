@@ -25,7 +25,7 @@ import {
   TransferRecommendation,
   TransferResult,
 } from '../services/api';
-import { saveEnterpriseCache } from '../utils/enterpriseCache';
+import { saveEnterpriseCache, loadEnterpriseCache } from '../utils/enterpriseCache';
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -333,13 +333,16 @@ function TransferCard({ t }: { t: TransferRecommendation }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function StoreTransfer() {
+  const cachedData = loadEnterpriseCache();
+  const cachedStores = cachedData?.stores && cachedData.stores.length > 0 ? cachedData.stores : null;
+
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [transportCost, setTransportCost] = useState<string>('5');
   const [horizonDays, setHorizonDays] = useState<string>('30');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [storeStats, setStoreStats] = useState<StoreCategoryStat[] | null>(null);
+  const [storeStats, setStoreStats] = useState<StoreCategoryStat[] | null>(cachedStores);
   const [result, setResult] = useState<TransferResult | null>(null);
   const [filter, setFilter] = useState<'viable' | 'all'>('viable');
 
@@ -349,6 +352,28 @@ export default function StoreTransfer() {
     const dropped = e.dataTransfer.files[0];
     if (dropped) setFile(dropped);
   }, []);
+
+  const runTransferAnalysis = async (ss: StoreCategoryStat[]) => {
+    const cost = parseFloat(transportCost) || 0;
+    const days = parseInt(horizonDays) || 30;
+    const rec = await recommendTransfers(ss, cost, days);
+    setResult(rec);
+  };
+
+  const handleAnalyzeFromCache = async () => {
+    if (!cachedStores) return;
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      setStoreStats(cachedStores);
+      await runTransferAnalysis(cachedStores);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? err?.message ?? 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAnalyze = async () => {
     if (!file) return;
@@ -367,7 +392,6 @@ export default function StoreTransfer() {
         return;
       }
       setStoreStats(ss);
-      // Persist enterprise stats to localStorage so Fleet/Store dashboards can read them
       saveEnterpriseCache({
         savedAt: new Date().toISOString(),
         fileName: file.name,
@@ -377,10 +401,7 @@ export default function StoreTransfer() {
         regions: ingestion.region_stats ?? [],
         stores: ss,
       });
-      const cost = parseFloat(transportCost) || 0;
-      const days = parseInt(horizonDays) || 30;
-      const rec = await recommendTransfers(ss, cost, days);
-      setResult(rec);
+      await runTransferAnalysis(ss);
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? err?.message ?? 'Unknown error');
     } finally {
@@ -457,127 +478,136 @@ export default function StoreTransfer() {
         </div>
       </div>
 
-      {/* ── Upload + config card ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-          <FileSpreadsheet className="h-4 w-4 text-indigo-400" />
-          Upload Data &amp; Configure Parameters
-        </h3>
-
-        {/* Drop zone */}
-        <div
-          onDragOver={e => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={onDrop}
-          onClick={() => document.getElementById('transfer-file-input')?.click()}
-          className={`rounded-xl border-2 border-dashed cursor-pointer transition-all mb-5 p-8 text-center ${
-            dragging
-              ? 'border-indigo-400 bg-indigo-50/40'
-              : file
-              ? 'border-emerald-300 bg-emerald-50/30'
-              : 'border-gray-200 bg-gray-50/50 hover:border-indigo-300 hover:bg-indigo-50/20'
-          }`}
-        >
-          {file ? (
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              </div>
-              <p className="text-sm font-semibold text-emerald-700">{file.name}</p>
-              <p className="text-xs text-gray-400">
-                {(file.size / 1024).toFixed(0)} KB · Click to replace
+      {/* ── Cache banner ── */}
+      {cachedStores && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-indigo-800">
+                Dataset already uploaded — {cachedData!.fileName}
+              </p>
+              <p className="text-xs text-indigo-500 mt-0.5">
+                {cachedStores.length} store×category records · {cachedData!.recordsCount.toLocaleString()} rows
               </p>
             </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                <Upload className="h-5 w-5 text-gray-400" />
-              </div>
-              <p className="text-sm font-medium text-gray-600">
-                Drag &amp; drop or{' '}
-                <span className="text-indigo-600 underline underline-offset-2">browse</span>
-              </p>
-              <p className="text-xs text-gray-400">Enterprise CSV · 17-column format</p>
-            </div>
-          )}
-          <input
-            id="transfer-file-input"
-            type="file"
-            accept=".csv,.xlsx,.xls"
-            className="hidden"
-            onChange={e => setFile(e.target.files?.[0] ?? null)}
-          />
-        </div>
-
-        {/* Parameters + action row */}
-        <div className="flex flex-wrap items-end gap-4">
-          {/* Transport cost */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-gray-500 flex items-center gap-1.5">
-              <Truck className="h-3.5 w-3.5 text-gray-400" />
-              Transport cost per unit (₹)
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">₹</span>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-indigo-600">Transport cost (₹)</label>
               <input
-                type="number"
-                min="0"
-                step="0.5"
-                value={transportCost}
+                type="number" min="0" step="0.5" value={transportCost}
                 onChange={e => setTransportCost(e.target.value)}
-                className="pl-7 pr-3 py-2 w-36 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
+                className="w-28 px-3 py-1.5 rounded-lg border border-indigo-200 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
               />
             </div>
-          </div>
-
-          {/* Planning horizon */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-gray-500 flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-gray-400" />
-              Planning horizon (days)
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="365"
-              value={horizonDays}
-              onChange={e => setHorizonDays(e.target.value)}
-              className="px-3 py-2 w-28 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
-            />
-          </div>
-
-          <div className="flex-1" />
-
-          {/* Analyse button */}
-          <button
-            onClick={handleAnalyze}
-            disabled={!file || loading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110"
-            style={{ background: 'linear-gradient(135deg, #4f46e5, #6366f1)' }}
-          >
-            {loading ? (
-              <>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-indigo-600">Horizon (days)</label>
+              <input
+                type="number" min="1" max="365" value={horizonDays}
+                onChange={e => setHorizonDays(e.target.value)}
+                className="w-24 px-3 py-1.5 rounded-lg border border-indigo-200 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              />
+            </div>
+            <button
+              onClick={handleAnalyzeFromCache}
+              disabled={loading}
+              className="self-end flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all hover:brightness-110"
+              style={{ background: 'linear-gradient(135deg, #4f46e5, #6366f1)' }}
+            >
+              {loading ? (
                 <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Analysing…
-              </>
-            ) : (
-              <>
+              ) : (
                 <Sparkles className="h-4 w-4" />
-                Analyse Transfers
-                <ChevronRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="mt-4 rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100">
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            {error}
+              )}
+              Analyse Transfers
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* ── Upload card (only shown when no cached data) ── */}
+      {!cachedStores && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            <FileSpreadsheet className="h-4 w-4 text-indigo-400" />
+            Upload Data &amp; Configure Parameters
+          </h3>
+
+          <div
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            onClick={() => document.getElementById('transfer-file-input')?.click()}
+            className={`rounded-xl border-2 border-dashed cursor-pointer transition-all mb-5 p-8 text-center ${
+              dragging ? 'border-indigo-400 bg-indigo-50/40'
+              : file ? 'border-emerald-300 bg-emerald-50/30'
+              : 'border-gray-200 bg-gray-50/50 hover:border-indigo-300 hover:bg-indigo-50/20'
+            }`}
+          >
+            {file ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                </div>
+                <p className="text-sm font-semibold text-emerald-700">{file.name}</p>
+                <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(0)} KB · Click to replace</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Upload className="h-5 w-5 text-gray-400" />
+                </div>
+                <p className="text-sm font-medium text-gray-600">
+                  Drag &amp; drop or <span className="text-indigo-600 underline underline-offset-2">browse</span>
+                </p>
+                <p className="text-xs text-gray-400">Enterprise CSV or Excel</p>
+              </div>
+            )}
+            <input id="transfer-file-input" type="file" accept=".csv,.xlsx,.xls" className="hidden"
+              onChange={e => setFile(e.target.files?.[0] ?? null)} />
+          </div>
+
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-gray-500 flex items-center gap-1.5">
+                <Truck className="h-3.5 w-3.5 text-gray-400" /> Transport cost per unit (₹)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">₹</span>
+                <input type="number" min="0" step="0.5" value={transportCost}
+                  onChange={e => setTransportCost(e.target.value)}
+                  className="pl-7 pr-3 py-2 w-36 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-gray-500 flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-gray-400" /> Planning horizon (days)
+              </label>
+              <input type="number" min="1" max="365" value={horizonDays}
+                onChange={e => setHorizonDays(e.target.value)}
+                className="px-3 py-2 w-28 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all" />
+            </div>
+            <div className="flex-1" />
+            <button onClick={handleAnalyze} disabled={!file || loading}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110"
+              style={{ background: 'linear-gradient(135deg, #4f46e5, #6366f1)' }}>
+              {loading ? <><span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Analysing…</>
+                : <><Sparkles className="h-4 w-4" />Analyse Transfers<ChevronRight className="h-4 w-4" /></>}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
 
       {/* ── Results ── */}
       {result && (
@@ -699,10 +729,21 @@ export default function StoreTransfer() {
           <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <ArrowLeftRight className="h-7 w-7 text-indigo-300" />
           </div>
-          <p className="text-sm font-semibold text-gray-500">Upload your data to get started</p>
-          <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-            Set the transport cost per unit, upload an enterprise CSV, and click Analyse Transfers.
-          </p>
+          {cachedStores ? (
+            <>
+              <p className="text-sm font-semibold text-gray-500">Click "Analyse Transfers" above to get recommendations</p>
+              <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
+                Set your transport cost and planning horizon, then run the analysis.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-gray-500">Upload an Enterprise dataset to get started</p>
+              <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
+                Or upload via Data Upload first — this page will detect it automatically next time.
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>
